@@ -28,7 +28,7 @@ formMovies.addEventListener('submit', async (e) => {
     const SearchMovie = document.querySelector('#searchText').value;
 
     const res = await axios.get(`https://api.themoviedb.org/3/search/movie?api_key=` + `${API_KEY}&query=` + `${SearchMovie}`);
-    console.log("Res", res);
+    //console.log("Res", res);
     const bestMatch = res.data.results[0];
 
     // API DATA
@@ -39,6 +39,7 @@ formMovies.addEventListener('submit', async (e) => {
     let strippedString = summary.replace(/(<([^>]+)>)/gi, "");
     // CAST
     const cast_res = await axios.get(`https://api.themoviedb.org/3/movie/${movie_id}/credits?api_key=${API_KEY}&language=en-US`);
+    //console.log(cast_res);
     let cast_names = 'Cast : ';
     for (let i = 0; i < 8; i++) {
         cast_names += cast_res.data.cast[i].name + ", ";
@@ -59,13 +60,28 @@ formMovies.addEventListener('submit', async (e) => {
     let ottNames = 0;
     let hasIN = ottRes.data.results;
     if (hasIN.hasOwnProperty('IN')) {
-        console.log('Supports IN');
+        //console.log('Supports IN');
         let hasFlat = hasIN.IN;
         if (hasFlat.hasOwnProperty('flatrate')) {
-            console.log('Has flatrate');
+            //console.log('Has flatrate');
             ottNames = ottRes.data.results.IN.flatrate;
         }
     }
+
+    //Genres
+    const genre = await axios.get(`https://api.themoviedb.org/3/movie/${movie_id}?api_key=${API_KEY}&language=en-US`);
+    //console.log(genre);
+    const Genres = document.createElement('p');
+    let gen_list = 'Genres: ';
+    const gen_data = genre.data.genres;
+    global_gendata = gen_data
+    for(let i=0;i<gen_data.length;i++){
+        gen_list += genre.data.genres[i].name + ', ';
+    }
+    gen_list = gen_list.substring(0,gen_list.length-2)
+    //console.log(gen_list);
+    Genres.innerHTML= gen_list;
+
 
     // Movie Trailer
     const yt_trailer = document.createElement('a');
@@ -113,6 +129,16 @@ formMovies.addEventListener('submit', async (e) => {
     info.innerText = strippedString;
     const cast = document.createElement('p');
     cast.innerText = cast_names;
+    const addBtn = document.createElement('button');
+
+    addBtn.classList.add('btn', 'btn-primary');
+    addBtn.setAttribute('type', 'button'); 
+    addBtn.innerText = 'ADD TO LIST'; 
+    
+    const deleteBtn = document.createElement('button');
+    deleteBtn.classList.add('btn', 'btn-danger');
+    deleteBtn.setAttribute('type', 'button'); 
+    deleteBtn.innerText = 'DELETE FROM LIST'; 
 
     ott_details.style.textAlign = 'center';
     ott_details.append(h3);
@@ -135,6 +161,8 @@ formMovies.addEventListener('submit', async (e) => {
     img.style.borderRadius = "10px";
     img.style.width = "220px";
 
+    Genres.style.fontSize='20px';
+
     info.style.fontFamily = 'Courgette, cursive';
     info.style.fontSize = '25px';
     info.style.fontWeight = '100';
@@ -144,6 +172,9 @@ formMovies.addEventListener('submit', async (e) => {
     cast.style.fontSize = '20px';
     cast.style.display = 'block';
     cast.style.fontColor = "white";
+
+    addBtn.style.margin = "20px 0px";
+    deleteBtn.style.margin = "20px 20px";
 
     resultDiv.style.display = "flex";
     resultDivImg.style.margin = "30px"
@@ -162,7 +193,10 @@ formMovies.addEventListener('submit', async (e) => {
     resultDivInfo.append(title);
     resultDivInfo.append(info);
     resultDivInfo.append(avg_rating);
+    resultDivInfo.append(Genres);
     resultDivInfo.append(cast);
+    resultDivInfo.append(addBtn);
+    resultDivInfo.append(deleteBtn);
     resultDivInfo.append(yt_trailer);
     resultDivImg.append(ott_details); //To append watch providers below poster
     resultDiv.append(resultDivImg);
@@ -306,6 +340,46 @@ formMovies.addEventListener('submit', async (e) => {
         }
     })
 
+    // ADD TO MY LIST
+    addBtn.addEventListener('click', () => {
+        var existingEntries = JSON.parse(localStorage.getItem("allEntries"));
+        if (existingEntries == null) existingEntries = [];
+        var flag=false;
+        existingEntries.forEach((e, i) => {
+            if (e.name === name) {
+                flag=true;
+            }
+        })
+
+        if (flag === false) {
+            alert('Item added to My List');
+            var title = name;
+            var img = poster;
+            var entry = {
+                "name" : title,
+                "image": img
+            };
+            localStorage.setItem("entry", JSON.stringify(entry));
+            existingEntries.push(entry);
+            localStorage.setItem("allEntries", JSON.stringify(existingEntries));
+        }
+        else {
+            alert('Item already present in My List');
+        }
+    });
+    deleteBtn.addEventListener('click', () => {
+        var existingEntries = JSON.parse(localStorage.getItem("allEntries"));
+        if (existingEntries == null) existingEntries = [];
+        else {
+            existingEntries.forEach((e, i) => {
+                if (e.name === name) {
+                    existingEntries.splice(i, 1);   
+                }
+            });
+        }
+        localStorage.setItem("allEntries", JSON.stringify(existingEntries));
+        console.log(existingEntries);
+    });
 
 })
 
@@ -384,7 +458,7 @@ const get_trailer = async (id) => {
     })
     return key
 }
-yt-modal
+// yt-modal
 
 
 function clear_metadata(){

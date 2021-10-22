@@ -111,6 +111,15 @@ form.addEventListener('submit', async (e)=>{
     const cast = document.createElement('p');
     cast.innerText = cast_names;
     const ott_details = document.createElement('div');
+    const addBtn = document.createElement('button');
+    addBtn.classList.add('btn', 'btn-primary');
+    addBtn.setAttribute('type', 'button'); 
+    addBtn.innerText = 'ADD TO LIST'; 
+    
+    const deleteBtn = document.createElement('button');
+    deleteBtn.classList.add('btn', 'btn-danger');
+    deleteBtn.setAttribute('type', 'button'); 
+    deleteBtn.innerText = 'DELETE FROM LIST'; 
 
     const avg_rating = document.createElement('p');
     avg_rating.innerHTML= rating;
@@ -162,6 +171,9 @@ form.addEventListener('submit', async (e)=>{
     cast.style.fontColor = "white"
 
     avg_rating.style.fontSize='20px';
+
+    addBtn.style.margin = "20px 0px";
+    deleteBtn.style.margin = "20px 20px";
     
     Genres.style.fontSize='20px';
     star_bottom.style='z-index: 1;  position:absolute; display: inline-block; overflow: hidden; white-space: nowrap;';
@@ -189,6 +201,8 @@ form.addEventListener('submit', async (e)=>{
     resultDivInfo.append(avg_rating)
     resultDivInfo.append(Genres);
     resultDivInfo.append(cast)
+    resultDivInfo.append(addBtn);
+    resultDivInfo.append(deleteBtn);
     showSecInfo();
     form.reset();
 
@@ -207,7 +221,77 @@ form.addEventListener('submit', async (e)=>{
     // EPISODE TABLE
     get_season(show_id, season_num);
 
+    // ADD TO MY LIST
+    addBtn.addEventListener('click', () => {
+        var existingEntries = JSON.parse(localStorage.getItem("allEntries"));
+        if (existingEntries == null) existingEntries = [];
+        var flag=false;
+        existingEntries.forEach((e, i) => {
+            if (e.name === name) {
+                flag=true;
+            }
+        })
+
+        if (flag === false) {
+            alert('Item added to My List');
+            var title = name;
+            var img = image;
+            var entry = {
+                "name" : title,
+                "image": img
+            };
+            localStorage.setItem("entry", JSON.stringify(entry));
+            existingEntries.push(entry);
+            localStorage.setItem("allEntries", JSON.stringify(existingEntries));
+        }
+        else {
+            alert('Item already present in My List');
+        }
+    });
+    deleteBtn.addEventListener('click', () => {
+        var existingEntries = JSON.parse(localStorage.getItem("allEntries"));
+        if (existingEntries == null) existingEntries = [];
+        else {
+            existingEntries.forEach((e, i) => {
+                if (e.name === name) {
+                    existingEntries.splice(i, 1);   
+                }
+            });
+        }
+        localStorage.setItem("allEntries", JSON.stringify(existingEntries));
+        console.log(existingEntries);
+    });
+
+    // SIMILAR MOVIES
+    document.querySelector('section.exp-sec').classList.remove('hidden');
+    const similar_Movies = await axios.get(`https://api.themoviedb.org/3/tv/${id}/similar?api_key=${API_KEY}&language=en-US&page=1`);
+    const similar_movies_result = similar_Movies.data.results;
+
+    similar_movies_result.forEach(item => {
+        divAppender('similar', item.poster_path, item.name);
+    });
 })
+
+const divAppender = (container_class, img_src_path, title)=>{
+    const pop_div = document.createElement("div");
+    const pop_img = document.createElement("img");
+    const pop_name = document.createElement("h6");
+    pop_div.append(pop_img);
+    pop_div.append(pop_name);
+    pop_img.height = '200px';
+    pop_img.src = 'https://image.tmdb.org/t/p/w500/'+img_src_path;
+    pop_name.innerText = title;
+
+    const container = document.querySelector(`.${container_class}`)
+    container.append(pop_div);
+
+    container.addEventListener('wheel', (event) => {
+        event.preventDefault();
+        container.scrollBy({
+          left: event.deltaY < 0 ? -30 : 30,
+        });
+    });
+}
 
 const popShowSection = document.querySelector("#popular-shows");
 const secInfo = document.querySelector("#sec-info");
